@@ -25,14 +25,13 @@ from pathlib import Path
 from mercapi import Mercapi
 from mercapi.requests import SearchRequestData
 
-SEARCH_KEYWORD = "旧アジア"
+SEARCH_KEYWORD = "レリーフ 1st"
 SEEN_FILE = Path(__file__).parent / "seen.json"
 MAX_SEEN = 3000        # how many listing IDs to remember
 MAX_ITEMS_PER_EMAIL = 40
 ITEM_URL = "https://jp.mercari.com/en/item/{id}"
 SEARCH_URL = (
-    "https://jp.mercari.com/en/search?keyword=%E6%97%A7%E3%82%A2%E3%82%B8%E3%82%A2"
-    "&sort=created_time&order=desc"
+    "https://jp.mercari.com/en/search?keyword=%E3%83%AC%E3%83%AA%E3%83%BC%E3%83%95%201st&sort=created_time&order=desc"
 )
 
 
