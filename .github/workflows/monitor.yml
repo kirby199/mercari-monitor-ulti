@@ -1,0 +1,58 @@
+name: Mercari monitor
+
+on:
+#  schedule:
+#    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may delay runs a few minutes)
+  workflow_dispatch:          # lets you run it manually from the Actions tab
+
+concurrency:
+  group: mercari-monitor
+  cancel-in-progress: false
+
+permissions:
+  contents: write             # needed to save seen.json back to the repo
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Always start from the newest commit, not the (possibly older)
+          # commit the run was queued on, so seen.json is never stale.
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Check for new listings
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python monitor.py
+
+      - name: Save seen listings
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain seen.json)" ]; then
+            git config user.name "mercari-monitor"
+            git config user.email "mercari-monitor@users.noreply.github.com"
+            git add seen.json
+            git commit -m "Update seen listings"
+            if ! git push; then
+              echo "Push rejected (repo changed during the run); retrying on the latest commit"
+              cp seen.json "$RUNNER_TEMP/seen.json"
+              git fetch origin "$GITHUB_REF_NAME"
+              git reset --hard "origin/$GITHUB_REF_NAME"
+              cp "$RUNNER_TEMP/seen.json" seen.json
+              git add seen.json
+              git commit -m "Update seen listings" || true
+              git push
+            fi
+          fi
